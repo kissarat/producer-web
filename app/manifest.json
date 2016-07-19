@@ -1,0 +1,13 @@
+{
+  "name": "producer-web",
+  "mimes": {
+    "application/javascript": "js",
+    "application/json": "json",
+    "text/css": "css",
+    "text/html": "html"
+  },
+  "static": [
+    "lib/underscore/underscore.js",
+    "js/main.js"
+  ]
+}
