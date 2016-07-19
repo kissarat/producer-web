@@ -16,8 +16,15 @@
 
     "lib/angular/angular.js",
     "lib/angular-route/angular-route.js",
+
     "js/main.js",
+
     "js/auth.js",
+    "views/login.html",
+
+    "js/user.js",
+    "views/signup.html",
+
     "js/run.js"
   ]
 }

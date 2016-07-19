@@ -7,7 +7,7 @@ const routes = {
     },
 
     'login': 'Auth',
-    'logout': 'Auth'
+    'signup': 'User'
 };
 
 function main() {
