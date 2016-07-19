@@ -10,10 +10,19 @@ xhr.onloadend = function () {
     function load() {
         var file = files.pop();
         if (file) {
-            var script = document.createElement('script');
-            script.src = '/' + file;
-            script.onload = load;
-            document.head.appendChild(script);
+            var tag;
+            if (/\.js$/.test(file)) {
+                tag = document.createElement('script');
+                tag.src = '/' + file;
+            }
+            else if (/\.css/.test(file)) {
+                tag = document.createElement('link');
+                tag.setAttribute('rel', 'stylesheet');
+                tag.setAttribute('type', 'text/css');
+                tag.href = '/' + file;
+            }
+            tag.onload = load;
+            document.head.appendChild(tag);
         }
         else {
             if (window.main instanceof Function) {
@@ -31,35 +40,3 @@ xhr.onloadend = function () {
 addEventListener('load', function () {
     xhr.send(null);
 });
-
-var Zone = {};
-var modules = {};
-var exports = {
-    'zone.js': 'lib/zone.js/dist/zone.js'
-};
-
-function exportModule(filename, exports) {
-    modules[filename] = exports;
-}
-
-function importModule(filename) {
-    var exports = modules[filename];
-    if (exports instanceof Function) {
-        modules[filename] = exports();
-    }
-    return modules[filename];
-}
-
-function require(location) {
-    if (location in exports) {
-        return importModule(exports[location]);
-    }
-    var filename = 'lib/' + location + '.js';
-    if (filename in modules) {
-        return importModule(filename);
-    }
-    filename = 'lib/' + location + '/index.js';
-    if (filename in modules) {
-        return importModule(filename);
-    }
-}

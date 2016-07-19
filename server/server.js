@@ -9,18 +9,20 @@ process.chdir(cwd);
 const manifest = JSON.parse(fs.readFileSync('manifest.json'));
 const mimes = manifest.mimes;
 
+for(let mime in mimes) {
+    mimes[mime] = new RegExp(`\\.${mimes[mime]}$`, 'i');
+}
+
 class File {
     constructor(filename, stat) {
         this.filename = filename;
         this.data = fs.readFileSync(filename);
         var mime;
         for (mime in mimes) {
-            let ext = mimes[mime];
-            if (filename.length === (filename.indexOf(ext) + ext.length)) {
+            if (mimes[mime].test(filename)) {
                 break;
             }
         }
-        walk(this);
         this.stat = stat ? stat : fs.statSync(filename);
         this.headers = {
             'content-type': mime
@@ -28,74 +30,13 @@ class File {
     }
 }
 
-class Module extends File {
-    constructor(require_path) {
-        var fd = require_path.filename ? require_path : Module.resolve(require_path);
-        super(fd.filename, fd.stat);
-    }
-
-    static resolve(require_path) {
-        try {
-            var filename = require_path + '.js';
-            var stat = fs.statSync(filename);
-        }
-        catch (ex) {
-            try {
-                filename = require_path + '/index.js';
-                stat = fs.statSync(filename);
-            }
-            catch (ex) {
-                throw new Error('Not found: ' + filename);
-            }
-        }
-        return {
-            filename: filename,
-            stat: stat
-        }
-    }
-}
-
 var files = {};
-
-function walk(file) {
-    var regex = /require\('([^']+)'\)/g;
-    var match;
-    file.data = file.data.toString('utf8');
-    while (match = regex.exec(file.data)) {
-        let require_path = match[1];
-        var prefix;
-        if ('.' === require_path[0]) {
-            prefix = file.filename.split('/').slice(0, -1);
-        }
-        else {
-            prefix = ['lib'];
-        }
-        require_path = prefix.concat(require_path.split('/')).join('/');
-        require_path = path.normalize(require_path);
-        let fd = Module.resolve(require_path);
-        file.data = file.data.replace(match[0], `importModule('${fd.filename}')`);
-        if (!(fd.filename in files)) {
-            let _module = new Module(fd);
-            files[_module.filename] = _module;
-        }
-    }
-}
 
 const preload = ['manifest.json', 'index.html', 'js/load.js'];
 manifest.static.concat(preload)
     .forEach(function (filename) {
         files[filename] = new File(filename);
     });
-
-for (let filename in files) {
-    let file = files[filename];
-    if (file.data.indexOf('exports.') >= 0) {
-        if (filename.indexOf('zone.js') < 0) {
-            file.data = `exportModule('${file.filename}', function() {var exports = {}; module = {exports: exports}; var global = window;\t${file.data};\nreturn exports;\n})`;
-        }
-        file.data = file.data.replace(/\/\/#\s*sourceMappingURL=.*\.js\.map/, '');
-    }
-}
 
 manifest.static = [];
 _.each(_.omit(files, preload), function (file, filename) {

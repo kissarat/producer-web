@@ -8,10 +8,16 @@
   },
   "static": [
     "lib/underscore/underscore.js",
-    "lib/reflect-metadata/Reflect.js",
-    "lib/@angular/core/src/metadata.js",
-    "lib/zone.js/dist/zone.js",
-    "lib/zone.js/dist/long-stack-trace-zone.js",
-    "js/main.js"
+    "lib/jquery/dist/jquery.js",
+
+    "lib/bootstrap/dist/css/bootstrap.css",
+    "lib/bootstrap/dist/css/bootstrap-theme.css",
+    "lib/bootstrap/dist/js/bootstrap.js",
+
+    "lib/angular/angular.js",
+    "lib/angular-route/angular-route.js",
+    "js/main.js",
+    "js/auth.js",
+    "js/run.js"
   ]
 }
