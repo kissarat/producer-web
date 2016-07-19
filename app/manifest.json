@@ -8,6 +8,10 @@
   },
   "static": [
     "lib/underscore/underscore.js",
+    "lib/reflect-metadata/Reflect.js",
+    "lib/@angular/core/src/metadata.js",
+    "lib/zone.js/dist/zone.js",
+    "lib/zone.js/dist/long-stack-trace-zone.js",
     "js/main.js"
   ]
 }

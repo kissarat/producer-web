@@ -1,50 +1,108 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const underscore = require('underscore');
+const _ = require('underscore');
 
-var cwd = path.normalize(__dirname + '/../app');
+const cwd = path.normalize(__dirname + '/../app');
 process.chdir(cwd);
 
-const pack = JSON.parse(fs.readFileSync('manifest.json'));
-const mimes = pack.mimes;
+const manifest = JSON.parse(fs.readFileSync('manifest.json'));
+const mimes = manifest.mimes;
 
 class File {
-    constructor(path, stat) {
-        this.data = fs.readFileSync(path);
+    constructor(filename, stat) {
+        this.filename = filename;
+        this.data = fs.readFileSync(filename);
         var mime;
         for (mime in mimes) {
             let ext = mimes[mime];
-            if (path.length === (path.indexOf(ext) + ext.length - 1)) {
+            if (filename.length === (filename.indexOf(ext) + ext.length)) {
                 break;
             }
         }
-        this.stat = stat ? stat : fs.statSync(path);
+        walk(this);
+        this.stat = stat ? stat : fs.statSync(filename);
         this.headers = {
             'content-type': mime
         }
     }
 }
 
-var files = {};
+class Module extends File {
+    constructor(require_path) {
+        var fd = require_path.filename ? require_path : Module.resolve(require_path);
+        super(fd.filename, fd.stat);
+    }
 
-function walk(dirname) {
-    fs.readdirSync(dirname).forEach(function (filename) {
-        filename = path.join(dirname, filename);
-        var stat = fs.statSync(filename);
-        if (stat.isDirectory()) {
-            walk(filename);
+    static resolve(require_path) {
+        try {
+            var filename = require_path + '.js';
+            var stat = fs.statSync(filename);
         }
-        else if (/\.(html|js|css)$/.test(filename) && !/node_modules.*\.min\.\w+$/.test(filename)) {
-            files[filename] = new File(filename, stat);
+        catch (ex) {
+            try {
+                filename = require_path + '/index.js';
+                stat = fs.statSync(filename);
+            }
+            catch (ex) {
+                throw new Error('Not found: ' + filename);
+            }
         }
-    })
+        return {
+            filename: filename,
+            stat: stat
+        }
+    }
 }
 
-pack.static.concat(['manifest.json', 'index.html']).reverse()
+var files = {};
+
+function walk(file) {
+    var regex = /require\('([^']+)'\)/g;
+    var match;
+    file.data = file.data.toString('utf8');
+    while (match = regex.exec(file.data)) {
+        let require_path = match[1];
+        var prefix;
+        if ('.' === require_path[0]) {
+            prefix = file.filename.split('/').slice(0, -1);
+        }
+        else {
+            prefix = ['lib'];
+        }
+        require_path = prefix.concat(require_path.split('/')).join('/');
+        require_path = path.normalize(require_path);
+        let fd = Module.resolve(require_path);
+        file.data = file.data.replace(match[0], `importModule('${fd.filename}')`);
+        if (!(fd.filename in files)) {
+            let _module = new Module(fd);
+            files[_module.filename] = _module;
+        }
+    }
+}
+
+const preload = ['manifest.json', 'index.html', 'js/load.js'];
+manifest.static.concat(preload)
     .forEach(function (filename) {
-    files[filename] = new File(filename);
+        files[filename] = new File(filename);
+    });
+
+for (let filename in files) {
+    let file = files[filename];
+    if (file.data.indexOf('exports.') >= 0) {
+        if (filename.indexOf('zone.js') < 0) {
+            file.data = `exportModule('${file.filename}', function() {var exports = {}; module = {exports: exports}; var global = window;\t${file.data};\nreturn exports;\n})`;
+        }
+        file.data = file.data.replace(/\/\/#\s*sourceMappingURL=.*\.js\.map/, '');
+    }
+}
+
+manifest.static = [];
+_.each(_.omit(files, preload), function (file, filename) {
+    manifest.static.push(filename);
 });
+
+files['manifest.json'].data = JSON.stringify(manifest);
 
 var server = http.createServer(function (req, res) {
     if ('/static' == req.url) {
@@ -60,10 +118,11 @@ var server = http.createServer(function (req, res) {
 
 server.listen(10000, function () {
     fs.watch('.', {recursive: true}, function (e, filename) {
-       if (filename in files) {
-           files[filename] = new File(filename);
-           console.log(new Date().toLocaleTimeString(), filename);
-       }
+        if (filename in files) {
+            files[filename] = new File(filename);
+            console.log(new Date().toLocaleTimeString(), filename);
+        }
     });
     process.title = manifest.name;
+    console.log('Loaded');
 });
