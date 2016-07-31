@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html ng-app="producer" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Producer</title>
     <base href="/" />
-    <script id="boot" src="/js/load.js"></script>
+    <title></title>
+    <script src="/dist/app.bundle.js"></script>
 </head>
 <body>
-<!--nav ng-controller="MenuController">
-    <a ng-repeat="item in menu" ng-bind="item.name" ng-href="{{item.url}}"></a>
-</nav-->
+<div ng-view></div>
 </body>
 </html>

@@ -1,4 +1,6 @@
 .idea/
 app/bower_components/
-app/lib/
+app/bundle.js
+app/lib
 node_modules
+app/dist/
