@@ -1,8 +1,11 @@
 'use strict';
 
+const angular = require('angular');
+require('angular-route');
 const _ = require('underscore');
 
 const app = angular.module('producer', ['ngRoute']);
+app.settings = require('./config.json');
 
 app.controllers = require('./controllers');
 app.routes = {
@@ -39,6 +42,8 @@ for (let name in app.controllers) {
     app.controller(name, app.controllers[name]);
 }
 
-(this.window ? window : global).app = app;
+if (this.window) {
+    window.app = app;
+}
 
 module.exports = app;

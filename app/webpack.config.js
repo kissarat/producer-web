@@ -8,6 +8,7 @@ module.exports = {
         loaders: [
             {test: /\.css$/, loader: "style-loader!css-loader"},
             {test: /\.svg$/, loader: 'svg-loader'},
+            {test: /\.json$/, loader: 'json-loader'},
             {
                 test: /\.(eot|woff|woff2|ttf)$/,
                 loader: 'file-loader'

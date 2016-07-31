@@ -1,0 +1,8 @@
+{
+  "static": {
+    "host": "localhost",
+    "port": 1991
+  },
+
+  "api": "http://localhost:1989/"
+}
